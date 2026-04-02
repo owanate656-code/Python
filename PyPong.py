@@ -104,7 +104,7 @@ def check_collision():
     # closest_x_left = ball.x + ball.radius
 
     closest_x_right = ball.x - ball.radius
-    if closest_x_right <= (player.x + player.width):
+    if closest_x_right <= (player.x + player.width) and ball.y <= player.y + player.height:
         player_center = player.y + (player.height//2)
         distance = ball.y - player_center
         bounce_factor = distance / (player.height //2)
