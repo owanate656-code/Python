@@ -20,6 +20,7 @@ PLAYER_WIDTH = 5
 
 BOT_X = 480
 
+MAX_BOUNCE_SPEED = 8
 BACKGROUND_COLOR = '#f6fd91'
 running = True
 window = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
@@ -64,7 +65,7 @@ def draw():
 def check_collision():
     #border-Collision
     if player.y <=0:
-            player.y = 0
+          player.y = 0
     
     elif (player.y +player.height)>=  GAME_HEIGHT:
             player.y = GAME_HEIGHT - player.height
@@ -74,8 +75,8 @@ def check_collision():
     
     
     #Checks Ball Collision with Borders
-    if ball.x +ball.radius<= 0:
-        ball.velocity_x *=-1
+    # if ball.x +ball.radius<= 0:
+    #     ball.velocity_x *=-1
     
     elif ball.x +ball.radius >= GAME_WIDTH:
         ball.velocity_x *=-1
@@ -102,15 +103,15 @@ def check_collision():
     #     ball.velocity_x *= -1.05
     # closest_x_left = ball.x + ball.radius
 
-    player_center = player.y + (player.height//2)
     closest_x_right = ball.x - ball.radius
     if closest_x_right <= (player.x + player.width):
-        if (closest_x_right <= player_center):
-            ball.velocity_y = -5
-        if (closest_x_right> player_center):
-            ball.velocity_y =5
+        player_center = player.y + (player.height//2)
+        distance = ball.y - player_center
+        bounce_factor = distance / (player.height //2)
+        ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
+        ball.velocity_x  *= -1
 
-
+    
  
     
     
