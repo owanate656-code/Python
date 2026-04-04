@@ -41,7 +41,7 @@ class Player(pygame.Rect):
         self.color = '#0c05d1'
         self.velocity_y = PLAYER_VELOCITY_Y
         self.direction = 'down'
-        self.score = 10
+        self.score = 0
 
 class Bot(pygame.Rect):
     def __init__(self,):
