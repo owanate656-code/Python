@@ -25,6 +25,9 @@ MAX_BOUNCE_SPEED = 8
 MINIMUM_BOUNCE_SPEED = 3
 BACKGROUND_COLOR = '#f6fd91'
 running = True
+gameover = False
+botWinState = False
+playerWinState = False
 window = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
 pygame.display.set_caption('PyPong')
 clock = pygame.time.Clock()
@@ -38,7 +41,7 @@ class Player(pygame.Rect):
         self.color = '#0c05d1'
         self.velocity_y = PLAYER_VELOCITY_Y
         self.direction = 'down'
-        self.score = 0
+        self.score = 10
 
 class Bot(pygame.Rect):
     def __init__(self,):
@@ -61,6 +64,7 @@ class Ball:
 
         
 def draw():
+    global playerWinState
     window.fill(BACKGROUND_COLOR)
     pygame.draw.rect(window , player.color , player)
     pygame.draw.rect(window , bot.color , bot)
@@ -71,8 +75,21 @@ def draw():
     botScoreText = consolas.render(str(bot.score) , True , 'black')
     window.blit(botScoreText , (480 , 480))
 
+    if playerWinState:
+        playerWinsText = consolas.render( 'Player Wins', True , 'black')
+        window.blit(playerWinsText , (150, 230))
+        instructionText = consolas.render('Press Enter To Restart or Baskspace to Close',True , 'black' )
+        window.blit(instructionText , (10, 250))
+    if botWinState:
+        botWinsText = consolas.render( 'Bot Wins', True , 'black')
+        window.blit(botWinsText , (150, 230))
+        instructionText = consolas.render('Press Enter To Restart or Baskspace to Close',True , 'black' )
+        window.blit(instructionText , (10, 250))
+
+
 
 def check_collision():
+    global botWinState , playerWinState
     #border-Collision with Padldles
     if player.y <=0:
           player.y = 0
@@ -114,7 +131,7 @@ def check_collision():
     #BALL COLLISION WITH PADDLES
     topBall = ball.y - ball.radius
     bottomBall = ball.y + ball.radius
-    closest_x_right = ball.x - ball.radius
+    closest_x_right = ball.x - ball.radius #closect distance to the right side of paddle
     
     if (bottomBall >= player.y) and (topBall <= player.y + player.height) and (closest_x_right <= player.x + player.width):
         
@@ -137,12 +154,21 @@ def check_collision():
         ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
         if abs(ball.velocity_y) <= MINIMUM_BOUNCE_SPEED:
         # ball.velocity_y = MINIMUM_BOUNCE_SPEED + (0.5 + abs(ball.velocity_y)) * (1 if ball.velocity_y > 0 else 1)
-            ball.velocity_y = (0.5 + abs(bounce_factor)) * MAX_BOUNCE_SPEED * (1 if bounce_factor >= 0 else -1)
+            ball.velocity_y = MINIMUM_BOUNCE_SPEED
 
         ball.velocity_x  *= -1
     
-    print(f'ball velocity y {ball.velocity_y}')
-    
+    if player.score == 10 and bot.score != 10:
+        playerWinState= True
+        ball.velocity_y = 0
+        ball.velocity_x =0
+    elif player.score != 10 and bot.score == 10:
+        botWinState= True
+        ball.velocity_y = 0
+        ball.velocity_x =0
+  
+        
+        
     
 def move():
     ball.y += ball.velocity_y
@@ -151,7 +177,7 @@ def move():
 def botMovement():
     global lastTimeBotMoved
     current_time = pygame.time.get_ticks()
-    reaction_delay = 50
+    reaction_delay = 40
     if current_time - lastTimeBotMoved >= reaction_delay:
         lastTimeBotMoved = current_time
         if ball.y  > bot.y+ (bot.height //2) and ball.velocity_x>0:
@@ -160,6 +186,18 @@ def botMovement():
             bot.y += -bot.velocity_y
         
 
+def restart():
+    global botWinState , playerWinState
+    player.score = 0
+    bot.score = 0
+    ball.velocity_x = random.choice(ball.possible_velocity)
+    ball.velocity_y = random.choice(ball.possible_velocity)
+    botWinState = False
+    playerWinState = False
+    bot.x = BOT_X
+    bot.y = BOT_Y
+    player.x = PLAYER_X
+    player.y = PLAYER_Y
 
 player = Player()
 ball = Ball()
@@ -179,11 +217,12 @@ while running:
         player.direction =  'down'
         player.y += player.velocity_y
     
+    if keys[pygame.K_RETURN]:
+        restart()
 
-
-    # print(last_time_active)
-
-    
+    if keys[pygame.K_BACKSPACE]:
+        running = False
+        sys.exit()
     check_collision()
     botMovement()
     move()
