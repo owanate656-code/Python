@@ -142,7 +142,7 @@ def check_collision():
         ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
         if abs(ball.velocity_y) <= MINIMUM_BOUNCE_SPEED:
         # ball.velocity_y = MINIMUM_BOUNCE_SPEED + (0.5 + abs(ball.velocity_y)) * (1 if ball.velocity_y > 0 else 1)
-            ball.velocity_y = (0.5 + abs(bounce_factor)) * MAX_BOUNCE_SPEED * (1 if bounce_factor >= 0 else -1)
+            ball.velocity_y = MINIMUM_BOUNCE_SPEED
         ball.velocity_x  *= -1
 
 
