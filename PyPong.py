@@ -1,8 +1,6 @@
 import pygame
 import sys
 import random
-import time
-
 
 pygame.init()
 #-------------------------Game Variables And Constants-------------------
@@ -13,35 +11,41 @@ GAME_HEIGHT = 500
 PLAYER_X = 20
 PLAYER_Y = 200
 PLAYER_VELOCITY_Y = 5
-BALL_VELOCITY_X = 5
-BALL_VELOCITY_Y = 5
+
 PLAYER_HEIGHT =  60
 PLAYER_WIDTH = 5
 
-BOT_X = 480
+BOT_HEIGHT =  60
+BOT_WIDTH = 5
 
-MOVE_BOT = pygame.USEREVENT +1
+BOT_X = 480
+BOT_Y = PLAYER_VELOCITY_Y
+
 MAX_BOUNCE_SPEED = 8
+MINIMUM_BOUNCE_SPEED = 3
 BACKGROUND_COLOR = '#f6fd91'
 running = True
 window = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
 pygame.display.set_caption('PyPong')
 clock = pygame.time.Clock()
 
-pygame.time.set_timer(MOVE_BOT , 1000)
+pygame.font.init()
+consolas = pygame.font.SysFont('Consolas' , 20)
+
 class Player(pygame.Rect):
     def __init__(self, ):
         pygame.Rect.__init__(self, PLAYER_X , PLAYER_Y ,PLAYER_WIDTH , PLAYER_HEIGHT)
         self.color = '#0c05d1'
         self.velocity_y = PLAYER_VELOCITY_Y
         self.direction = 'down'
+        self.score = 0
 
 class Bot(pygame.Rect):
     def __init__(self,):
-        pygame.Rect.__init__(self , BOT_X , PLAYER_Y , PLAYER_WIDTH , PLAYER_HEIGHT)
+        pygame.Rect.__init__(self , BOT_X , PLAYER_Y , BOT_WIDTH , BOT_HEIGHT)
         self.color = '#0c05d1'
         self.velocity_y = 8
-      
+        self.score = 0
         
 
 class Ball:
@@ -50,10 +54,10 @@ class Ball:
         self.y = GAME_HEIGHT//2
         self.radius = 10
         self.color = '#92fc82'
-        self.velocity_x = 5
-        self.velocity_y = 7
-        self.directions = ['up', 'down']
-        self.direction = random.choice(self.directions)
+        self.possible_velocity = [2,  -2, -2,3,3 ]
+        self.velocity_x = random.choice(self.possible_velocity)
+        self.velocity_y = random.choice(self.possible_velocity)
+    
 
         
 def draw():
@@ -61,6 +65,11 @@ def draw():
     pygame.draw.rect(window , player.color , player)
     pygame.draw.rect(window , bot.color , bot)
     pygame.draw.circle(window , ball.color , (ball.x , ball.y), ball.radius ,)
+    playerScoreText = consolas.render(str(player.score ), True , 'black')
+    window.blit(playerScoreText , (20  , 20))
+
+    botScoreText = consolas.render(str(bot.score) , True , 'black')
+    window.blit(botScoreText , (480 , 480))
 
 
 def check_collision():
@@ -72,7 +81,7 @@ def check_collision():
             player.y = GAME_HEIGHT - player.height
     if bot.y <=0:
         bot.y = 0
-    elif (bot.y + player.height)>= GAME_HEIGHT:
+    elif (bot.y + bot.height)>= GAME_HEIGHT:
         bot.y = GAME_HEIGHT - bot.height
     
     
@@ -81,37 +90,58 @@ def check_collision():
     
     
     #Checks Ball Collision with Borders
-    # if ball.x +ball.radius<= 0:
-    #     ball.velocity_x *=-1
+    if ball.x -ball.radius<= 0:
+        bot.score += 1
+        ball.x = GAME_WIDTH//2
+        ball.y = GAME_HEIGHT //2
+        ball.velocity_x = random.choice(ball.possible_velocity)
+        ball.velocity_y = random.choice(ball.possible_velocity)
     
     elif ball.x +ball.radius >= GAME_WIDTH:
-        ball.velocity_x *=-1
+        player.score += 1
+        ball.x = GAME_WIDTH//2
+        ball.y = GAME_HEIGHT //2
+        ball.velocity_x = random.choice(ball.possible_velocity)
+        ball.velocity_y = random.choice(ball.possible_velocity)
 
-    if ball.y +ball.radius <= 0:
+    if ball.y - ball.radius <= 0:
         ball.velocity_y *= -1
+    
     elif ball.y + ball.radius >= GAME_HEIGHT:
         ball.velocity_y *= -1
 
+
+    #BALL COLLISION WITH PADDLES
     topBall = ball.y - ball.radius
     bottomBall = ball.y + ball.radius
     closest_x_right = ball.x - ball.radius
     
     if (bottomBall >= player.y) and (topBall <= player.y + player.height) and (closest_x_right <= player.x + player.width):
+        
         player_center = player.y + (player.height//2)
+     
         distance = ball.y - player_center
         bounce_factor = distance / (player.height //2)
         ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
+        if abs(ball.velocity_y) <= MINIMUM_BOUNCE_SPEED:
+        # ball.velocity_y = MINIMUM_BOUNCE_SPEED + (0.5 + abs(ball.velocity_y)) * (1 if ball.velocity_y > 0 else 1)
+            ball.velocity_y = (0.5 + abs(bounce_factor)) * MAX_BOUNCE_SPEED * (1 if bounce_factor >= 0 else -1)
         ball.velocity_x  *= -1
 
-    if (bottomBall >= bot.y) and (topBall <= bot.y + bot.height) and (closest_x_right<= bot.x + player.width):
-        player_center = player.y + (player.height//2)
-        distance = ball.y - player_center
-        bounce_factor = distance / (player.height //2)
+
+    if (bottomBall >= bot.y) and (topBall <= bot.y + bot.height) and (ball.x + ball.radius>= bot.x):
+        bot_center = bot.y + (bot.height//2)
+        distance = ball.y - bot_center
+        bounce_factor = distance / (bot.height //2)
         ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
-        ball.velocity_x  *= -1
+        ball.velocity_y = bounce_factor * MAX_BOUNCE_SPEED
+        if abs(ball.velocity_y) <= MINIMUM_BOUNCE_SPEED:
+        # ball.velocity_y = MINIMUM_BOUNCE_SPEED + (0.5 + abs(ball.velocity_y)) * (1 if ball.velocity_y > 0 else 1)
+            ball.velocity_y = (0.5 + abs(bounce_factor)) * MAX_BOUNCE_SPEED * (1 if bounce_factor >= 0 else -1)
 
+        ball.velocity_x  *= -1
     
- 
+    print(f'ball velocity y {ball.velocity_y}')
     
     
 def move():
@@ -119,23 +149,28 @@ def move():
     ball.x += ball.velocity_x
 
 def botMovement():
-    if ball.y > bot.y and ball.velocity_x>0:
-        bot.y += bot.velocity_y
-    elif ball.y < bot.y and ball.velocity_x >0:
-        bot.y += -bot.velocity_y
+    global lastTimeBotMoved
+    current_time = pygame.time.get_ticks()
+    reaction_delay = 50
+    if current_time - lastTimeBotMoved >= reaction_delay:
+        lastTimeBotMoved = current_time
+        if ball.y  > bot.y+ (bot.height //2) and ball.velocity_x>0:
+            bot.y += bot.velocity_y
+        elif ball.y < bot.y + (bot.height //2) and ball.velocity_x >0:
+            bot.y += -bot.velocity_y
+        
 
 
 player = Player()
 ball = Ball()
 bot = Bot()
-
+lastTimeBotMoved = 0
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
             sys.exit()
-        if event.type == MOVE_BOT:
-            botMovement()
+
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP] or keys[pygame.K_w]:
         player.direction =  'up'
@@ -143,16 +178,18 @@ while running:
     elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
         player.direction =  'down'
         player.y += player.velocity_y
+    
 
-    print(f'ball y {ball.y}')
 
     # print(last_time_active)
-    pygame.display.update()
-    check_collision()
 
+    
+    check_collision()
+    botMovement()
     move()
-    draw()
+    draw() 
+    pygame.display.update()
   
-    clock.tick(30)
+    clock.tick(40)
 
 
